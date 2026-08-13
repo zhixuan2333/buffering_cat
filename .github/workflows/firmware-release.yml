@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CH32FUN_REF: 0b43571b67107b85c222ffeaa1d14adcfdbb5c31
+  CH32FUN_REF: 1e92c653742b411fe00d5edf752d9775da6b61d9
   RV003USB_REF: 80b18937e5da619ac3c9bb74af7ecbf2d2f7f4c6
 
 jobs:
@@ -65,15 +65,15 @@ jobs:
           - hardware: v1.1
             hardware_rev: 11
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: cnlohr/ch32fun
           ref: ${{ env.CH32FUN_REF }}
           path: .deps/ch32fun
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: cnlohr/rv003usb
           ref: ${{ env.RV003USB_REF }}
@@ -99,7 +99,7 @@ jobs:
           cp firmware/buffering_cat.bin \
             "release/buffering-cat-${{ matrix.hardware }}-${{ needs.metadata.outputs.version }}.bin"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: firmware-${{ matrix.hardware }}
           path: release/*.bin
@@ -109,15 +109,15 @@ jobs:
     needs: metadata
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: cnlohr/ch32fun
           ref: ${{ env.CH32FUN_REF }}
           path: .deps/ch32fun
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: cnlohr/rv003usb
           ref: ${{ env.RV003USB_REF }}
@@ -140,7 +140,7 @@ jobs:
           cp firmware/usb_bootloader/buffering_cat_bootloader.bin \
             release/buffering-cat-usb-bootloader.bin
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: usb-bootloader
           path: release/*.bin
@@ -150,15 +150,15 @@ jobs:
     needs: [metadata, build, bootloader]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: firmware-*
           path: release
           merge-multiple: true
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: usb-bootloader
           path: release

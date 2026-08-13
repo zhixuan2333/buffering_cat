@@ -8,5 +8,5 @@ name = "buffering-cat"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.5.53", features = ["derive"] }
+clap = { version = "4.6.6", features = ["derive"] }
 hidapi = "2.6.6"

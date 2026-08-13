@@ -1,0 +1,46 @@
+name: Dependency checks
+
+on:
+  pull_request:
+    paths:
+      - "webhid/**"
+      - "host/**"
+      - ".github/dependabot.yml"
+      - ".github/workflows/dependency-checks.yml"
+  push:
+    branches: [main]
+    paths:
+      - "webhid/**"
+      - "host/**"
+      - ".github/dependabot.yml"
+      - ".github/workflows/dependency-checks.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webhid
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: webhid/package-lock.json
+      - run: npm ci
+      - run: npm audit --audit-level=low
+      - run: npm run lint
+      - run: npm test
+
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: host
+    steps:
+      - uses: actions/checkout@v5
+      - run: cargo test --locked
