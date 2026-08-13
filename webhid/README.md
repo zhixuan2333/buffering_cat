@@ -56,5 +56,7 @@ line. After authenticating Wrangler, run:
 npm run deploy
 ```
 
-The checked-in `wrangler.jsonc` points Workers Static Assets at `out`; no
-OpenNext adapter or Worker runtime is needed.
+The checked-in `wrangler.jsonc` points Workers Static Assets at `out`. A small
+Worker endpoint proxies validated firmware assets from GitHub Releases because
+the release download host does not allow browser `fetch()` requests. No
+OpenNext adapter or server-rendered Next.js runtime is needed.

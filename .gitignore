@@ -37,6 +37,7 @@ host/target/
 webhid/node_modules/
 webhid/.next/
 webhid/out/
+webhid/.wrangler/
 webhid/coverage/
 webhid/outputs/
 webhid/work/

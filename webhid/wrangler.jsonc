@@ -1,9 +1,11 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "buffering-cat",
+  "main": "./worker.ts",
   "compatibility_date": "2026-08-13",
   "assets": {
     "directory": "./out",
+    "binding": "ASSETS",
     "not_found_handling": "404-page"
   }
 }

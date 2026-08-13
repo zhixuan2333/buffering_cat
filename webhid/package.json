@@ -11,7 +11,7 @@
     "deploy": "npm run build && wrangler deploy",
     "preview": "npm run build && wrangler dev",
     "start": "npx serve out",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs",
+    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/worker.test.mjs",
     "lint": "eslint . --ignore-pattern out --ignore-pattern .next --ignore-pattern .git.local-backup"
   },
   "dependencies": {

@@ -310,7 +310,9 @@ export function HidController() {
       const asset = release.assets.find((candidate) => candidate.name === expectedName);
       if (!asset) throw new Error(`${hardware} firmware is not attached to this release.`);
       setUpdateStatus(`Downloading ${asset.name}…`);
-      const response = await fetch(asset.browser_download_url);
+      const response = await fetch(
+        `/api/firmware?url=${encodeURIComponent(asset.browser_download_url)}`,
+      );
       if (!response.ok) throw new Error(`Firmware download failed (${response.status}).`);
       const image = new Uint8Array(await response.arrayBuffer());
       if (!image.length || image.length > 16 * 1024) {
