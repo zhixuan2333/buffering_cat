@@ -35,16 +35,17 @@ will drive the wrong GPIOs.
 
 ## Firmware releases
 
-GitHub Actions builds application images for both v1.0 and v1.1 plus the common
-USB bootloader.
+GitHub Actions builds application images for both v1.0 and v1.1, the common
+USB bootloader, and native Rust controller binaries for Linux, macOS, and
+Windows on both x86_64 and ARM64.
 
 - A push to `main` that changes firmware creates a prerelease whose tag is the
   first eight characters of the Git commit hash. GitHub rejects tag names made
   of exactly 40 hexadecimal characters, so a full SHA cannot be used directly.
 - **Run workflow → Firmware release** accepts a manual `vX.Y.Z` version and
   publishes it as the latest stable release.
-- Every release includes both `.bin` files, the one-time bootloader,
-  `firmware-manifest.json`, and `SHA256SUMS`.
+- Every release includes both `.bin` files, the one-time bootloader, six native
+  CLI archives, `firmware-manifest.json`, and `SHA256SUMS`.
 
 The application embeds the release version, Git hash, hardware revision, and
 HID protocol version. `buffering-cat status` and the web controller expose the

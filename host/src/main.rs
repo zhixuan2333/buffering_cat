@@ -16,11 +16,15 @@ const CMD_SET_MASK: u8 = 0x01;
 const CMD_SET_ANIMATION: u8 = 0x02;
 const CMD_OFF: u8 = 0x03;
 const BOOTLOADER_REPORT_ID: u8 = 0xfd;
+const BUILD_VERSION: &str = match option_env!("BUFFERING_CAT_BUILD_VERSION") {
+    Some(version) => version,
+    None => env!("CARGO_PKG_VERSION"),
+};
 
 #[derive(Parser)]
 #[command(
     name = "buffering-cat",
-    version,
+    version = BUILD_VERSION,
     about = "Control the Buffering Cat CH32V003 LEDs over USB HID"
 )]
 struct Cli {

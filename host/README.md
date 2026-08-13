@@ -6,6 +6,11 @@ Build the native controller:
 cargo build --release
 ```
 
+Prebuilt archives are attached to every GitHub Release for Linux, macOS, and
+Windows on x86_64 and ARM64. The archive name includes the OS, architecture,
+and release version. Run `buffering-cat --version` to verify the embedded
+release tag or commit hash.
+
 Examples:
 
 ```sh

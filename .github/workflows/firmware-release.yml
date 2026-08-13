@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "firmware/**"
+      - "host/**"
       - ".github/workflows/firmware-release.yml"
   workflow_dispatch:
     inputs:
@@ -146,8 +147,86 @@ jobs:
           path: release/*.bin
           if-no-files-found: error
 
+  cli:
+    needs: metadata
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            os: linux
+            arch: x86_64
+            archive: tar.gz
+          - runner: ubuntu-22.04-arm
+            os: linux
+            arch: aarch64
+            archive: tar.gz
+          - runner: macos-15-intel
+            os: macos
+            arch: x86_64
+            archive: tar.gz
+          - runner: macos-15
+            os: macos
+            arch: aarch64
+            archive: tar.gz
+          - runner: windows-2025
+            os: windows
+            arch: x86_64
+            archive: zip
+          - runner: windows-11-arm
+            os: windows
+            arch: aarch64
+            archive: zip
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Linux HID build dependency
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libudev-dev
+
+      - name: Build controller
+        env:
+          BUFFERING_CAT_BUILD_VERSION: ${{ needs.metadata.outputs.version }}
+        run: cargo build --release --locked --manifest-path host/Cargo.toml
+
+      - name: Package controller (Linux/macOS)
+        if: runner.os != 'Windows'
+        env:
+          RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+          RELEASE_OS: ${{ matrix.os }}
+          RELEASE_ARCH: ${{ matrix.arch }}
+        run: |
+          mkdir -p release cli-package
+          cp host/target/release/buffering-cat cli-package/
+          cp LICENSE host/README.md cli-package/
+          tar -czf "release/buffering-cat-cli-${RELEASE_OS}-${RELEASE_ARCH}-${RELEASE_VERSION}.tar.gz" \
+            -C cli-package .
+
+      - name: Package controller (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+          RELEASE_OS: ${{ matrix.os }}
+          RELEASE_ARCH: ${{ matrix.arch }}
+        run: |
+          New-Item -ItemType Directory -Force release, cli-package
+          Copy-Item host/target/release/buffering-cat.exe cli-package/
+          Copy-Item LICENSE, host/README.md cli-package/
+          $archive = "release/buffering-cat-cli-$env:RELEASE_OS-$env:RELEASE_ARCH-$env:RELEASE_VERSION.zip"
+          Compress-Archive -Path cli-package/* -DestinationPath $archive
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cli-${{ matrix.os }}-${{ matrix.arch }}
+          path: release/*
+          if-no-files-found: error
+
   release:
-    needs: [metadata, build, bootloader]
+    needs: [metadata, build, bootloader, cli]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -163,13 +242,18 @@ jobs:
           name: usb-bootloader
           path: release
 
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: cli-*
+          path: release
+          merge-multiple: true
+
       - name: Create release manifest
         env:
           RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
           RELEASE_GIT_HASH: ${{ github.sha }}
         run: |
           cd release
-          sha256sum *.bin > SHA256SUMS
           jq -n \
             --arg version "$RELEASE_VERSION" \
             --arg git_hash "$RELEASE_GIT_HASH" \
@@ -177,7 +261,16 @@ jobs:
               hardware: {
                 "v1.0": ("buffering-cat-v1.0-" + $version + ".bin"),
                 "v1.1": ("buffering-cat-v1.1-" + $version + ".bin")
+              },
+              cli: {
+                "linux-x86_64": ("buffering-cat-cli-linux-x86_64-" + $version + ".tar.gz"),
+                "linux-aarch64": ("buffering-cat-cli-linux-aarch64-" + $version + ".tar.gz"),
+                "macos-x86_64": ("buffering-cat-cli-macos-x86_64-" + $version + ".tar.gz"),
+                "macos-aarch64": ("buffering-cat-cli-macos-aarch64-" + $version + ".tar.gz"),
+                "windows-x86_64": ("buffering-cat-cli-windows-x86_64-" + $version + ".zip"),
+                "windows-aarch64": ("buffering-cat-cli-windows-aarch64-" + $version + ".zip")
               }}' > firmware-manifest.json
+          sha256sum *.bin *.tar.gz *.zip > SHA256SUMS
 
       - name: Publish GitHub Release
         env:
