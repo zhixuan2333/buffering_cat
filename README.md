@@ -39,7 +39,8 @@ GitHub Actions builds application images for both v1.0 and v1.1 plus the common
 USB bootloader.
 
 - A push to `main` that changes firmware creates a prerelease whose tag is the
-  full Git commit hash.
+  first eight characters of the Git commit hash. GitHub rejects tag names made
+  of exactly 40 hexadecimal characters, so a full SHA cannot be used directly.
 - **Run workflow → Firmware release** accepts a manual `vX.Y.Z` version and
   publishes it as the latest stable release.
 - Every release includes both `.bin` files, the one-time bootloader,
