@@ -48,3 +48,13 @@ project with:
 
 The GitHub Releases API and WebHID calls run directly in the visitor's browser.
 Cloudflare Pages provides the HTTPS secure context required by WebHID.
+
+The same static export can be deployed to Cloudflare Workers from the command
+line. After authenticating Wrangler, run:
+
+```sh
+npm run deploy
+```
+
+The checked-in `wrangler.jsonc` points Workers Static Assets at `out`; no
+OpenNext adapter or Worker runtime is needed.
