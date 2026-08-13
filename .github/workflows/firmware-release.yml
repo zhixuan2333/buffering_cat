@@ -1,0 +1,197 @@
+name: Firmware release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "firmware/**"
+      - ".github/workflows/firmware-release.yml"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semantic version tag (for example v1.2.3)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: firmware-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CH32FUN_REF: 0b43571b67107b85c222ffeaa1d14adcfdbb5c31
+  RV003USB_REF: 80b18937e5da619ac3c9bb74af7ecbf2d2f7f4c6
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      git_hash: ${{ steps.release.outputs.git_hash }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+    steps:
+      - id: release
+        name: Resolve release metadata
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ ! "$REQUESTED_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "version must match vX.Y.Z" >&2
+              exit 1
+            fi
+            echo "version=$REQUESTED_VERSION" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "git_hash=${GITHUB_SHA:0:8}" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: metadata
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - hardware: v1.0
+            hardware_rev: 10
+          - hardware: v1.1
+            hardware_rev: 11
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: cnlohr/ch32fun
+          ref: ${{ env.CH32FUN_REF }}
+          path: .deps/ch32fun
+
+      - uses: actions/checkout@v4
+        with:
+          repository: cnlohr/rv003usb
+          ref: ${{ env.RV003USB_REF }}
+          path: .deps/rv003usb
+
+      - name: Install RISC-V toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends make gcc-riscv64-unknown-elf libnewlib-dev
+
+      - name: Build ${{ matrix.hardware }} firmware
+        run: |
+          make -C firmware clean \
+            CH32FUN="$GITHUB_WORKSPACE/.deps/ch32fun/ch32fun" \
+            RV003USB="$GITHUB_WORKSPACE/.deps/rv003usb"
+          make -C firmware \
+            CH32FUN="$GITHUB_WORKSPACE/.deps/ch32fun/ch32fun" \
+            RV003USB="$GITHUB_WORKSPACE/.deps/rv003usb" \
+            HARDWARE_REV=${{ matrix.hardware_rev }} \
+            FIRMWARE_VERSION="${{ needs.metadata.outputs.version }}" \
+            GIT_HASH="${{ needs.metadata.outputs.git_hash }}"
+          mkdir -p release
+          cp firmware/buffering_cat.bin \
+            "release/buffering-cat-${{ matrix.hardware }}-${{ needs.metadata.outputs.version }}.bin"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.hardware }}
+          path: release/*.bin
+          if-no-files-found: error
+
+  bootloader:
+    needs: metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: cnlohr/ch32fun
+          ref: ${{ env.CH32FUN_REF }}
+          path: .deps/ch32fun
+
+      - uses: actions/checkout@v4
+        with:
+          repository: cnlohr/rv003usb
+          ref: ${{ env.RV003USB_REF }}
+          path: .deps/rv003usb
+
+      - name: Install RISC-V toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends make gcc-riscv64-unknown-elf libnewlib-dev
+
+      - name: Build one-time USB bootloader
+        run: |
+          make -C firmware/usb_bootloader clean \
+            CH32FUN="$GITHUB_WORKSPACE/.deps/ch32fun/ch32fun" \
+            RV003USB="$GITHUB_WORKSPACE/.deps/rv003usb"
+          make -C firmware/usb_bootloader \
+            CH32FUN="$GITHUB_WORKSPACE/.deps/ch32fun/ch32fun" \
+            RV003USB="$GITHUB_WORKSPACE/.deps/rv003usb"
+          mkdir -p release
+          cp firmware/usb_bootloader/buffering_cat_bootloader.bin \
+            release/buffering-cat-usb-bootloader.bin
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: usb-bootloader
+          path: release/*.bin
+          if-no-files-found: error
+
+  release:
+    needs: [metadata, build, bootloader]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: firmware-*
+          path: release
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: usb-bootloader
+          path: release
+
+      - name: Create release manifest
+        env:
+          RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+          RELEASE_GIT_HASH: ${{ github.sha }}
+        run: |
+          cd release
+          sha256sum *.bin > SHA256SUMS
+          jq -n \
+            --arg version "$RELEASE_VERSION" \
+            --arg git_hash "$RELEASE_GIT_HASH" \
+            '{schema: 1, version: $version, git_hash: $git_hash, protocol: 2,
+              hardware: {
+                "v1.0": ("buffering-cat-v1.0-" + $version + ".bin"),
+                "v1.1": ("buffering-cat-v1.1-" + $version + ".bin")
+              }}' > firmware-manifest.json
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.metadata.outputs.version }}
+          IS_PRERELEASE: ${{ needs.metadata.outputs.prerelease }}
+        run: |
+          release_args=(
+            "$RELEASE_TAG"
+            release/*
+            --target "$GITHUB_SHA"
+            --title "Buffering Cat firmware $RELEASE_TAG"
+            --generate-notes
+          )
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
+            release_args+=(--prerelease --latest=false)
+          else
+            release_args+=(--latest)
+          fi
+          gh release create "${release_args[@]}"

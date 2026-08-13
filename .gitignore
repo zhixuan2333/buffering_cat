@@ -1,0 +1,49 @@
+# macOS / editors
+.DS_Store
+*.swp
+*~
+
+# KiCad local state, autosaves, and backups
+*-backups/
+_autosave-*
+*.kicad_prl
+*.lck
+~*.kicad_*
+*.bak
+place_footprints.log
+
+# Generated fabrication outputs (regenerate from the KiCad sources)
+production/
+
+# Firmware build products
+firmware/*.bin
+firmware/*.elf
+firmware/*.hex
+firmware/*.lst
+firmware/*.map
+firmware/*_ext.bin
+firmware/generated_*.ld
+firmware/usb_bootloader/*.bin
+firmware/usb_bootloader/*.elf
+firmware/usb_bootloader/*.hex
+firmware/usb_bootloader/*.lst
+firmware/usb_bootloader/*.map
+firmware/usb_bootloader/*_ext.bin
+
+# Rust
+host/target/
+
+# Web application
+webhid/node_modules/
+webhid/.next/
+webhid/out/
+webhid/coverage/
+webhid/outputs/
+webhid/work/
+webhid/.env*
+!webhid/.env.example
+webhid/next-env.d.ts
+
+# Preserve the former standalone web repository metadata only as a local backup.
+webhid/.git.local-backup/
+CH32V003_kicad_symbol/.git.local-backup/
