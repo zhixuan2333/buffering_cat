@@ -7,6 +7,10 @@ Rust CLI, or lightweight Codex/ChatGPT activity hooks.
 The repository contains the complete KiCad design, firmware, host tools, and a
 WebHID controller with browser-based firmware updates.
 
+<p align="center">
+  <img src="assets/pcb-preview.png" alt="Buffering Cat PCB preview" width="600">
+</p>
+
 ## Repository layout
 
 - [`buffering_cat.kicad_sch`](buffering_cat.kicad_sch) and
