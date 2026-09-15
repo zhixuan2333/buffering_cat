@@ -87,9 +87,9 @@ default; see [`firmware/README.md`](firmware/README.md) for path overrides.
 
 ## Links
 
-[![Project announcement video](assets/project-announcement.jpg)](assets/project-announcement.mp4)
+![Project announcement video](assets/project-announcement.gif)
 
-[Watch the original post on X](https://x.com/zhixuan2333/status/2087470282600771743)
+[Watch or download the video (MP4)](assets/project-announcement.mp4) · [View the original post on X](https://x.com/zhixuan2333/status/2087470282600771743)
 
 ## License
 
