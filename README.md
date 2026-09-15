@@ -87,11 +87,9 @@ default; see [`firmware/README.md`](firmware/README.md) for path overrides.
 
 ## Links
 
-<blockquote class="twitter-tweet">
-  <p lang="en" dir="ltr">Project announcement</p>
-  &mdash; 0xZhixuan (<a href="https://x.com/zhixuan2333">@zhixuan2333</a>)
-  <a href="https://x.com/zhixuan2333/status/2087470282600771743">View the post on X</a>
-</blockquote>
+[![Project announcement video](assets/project-announcement.jpg)](assets/project-announcement.mp4)
+
+[Watch the original post on X](https://x.com/zhixuan2333/status/2087470282600771743)
 
 ## License
 
